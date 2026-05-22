@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dinner Planner</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 1rem;
+      background: #f5f5f5;
+      color: #222;
+    }
+    h1, h2 {
+      margin: 0.5rem 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 1rem 1.5rem 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    .section {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid #ddd;
+    }
+    label {
+      display: block;
+      margin-top: 0.5rem;
+      font-weight: 600;
+    }
+    input, select, button, textarea {
+      margin-top: 0.25rem;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.95rem;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    input, select, textarea {
+      width: 100%;
+      max-width: 100%;
+    }
+    button {
+      cursor: pointer;
+      background: #1976d2;
+      color: #fff;
+      border: none;
+      margin-right: 0.5rem;
+    }
+    button.secondary {
+      background: #555;
+    }
+    button.danger {
+      background: #c62828;
+    }
+    button:disabled {
+      background: #aaa;
+      cursor: default;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: flex-end;
+    }
+    .row > div {
+      flex: 1 1 200px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 0.4rem 0.5rem;
+      text-align: left;
+    }
+    th {
+      background: #f0f0f0;
+    }
+    .small {
+      font-size: 0.8rem;
+      color: #555;
+    }
+    .pill {
+      display: inline-block;
+      padding: 0.1rem 0.4rem;
+      border-radius: 999px;
+      background: #e3f2fd;
+      font-size: 0.75rem;
+    }
+    .suggestion-box {
+      padding: 0.75rem;
+      border-radius: 6px;
+      background: #e8f5e9;
+      border: 1px solid #c8e6c9;
+      margin-top: 0.5rem;
+    }
+    .error {
+      color: #c62828;
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+    }
+    .flex-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .file-input {
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Dinner Planner</h1>
+  <p class="small">
+    Enter one dinner per day over time. Save/restore as JSON. Ask the system to suggest the next meal.
+  </p>
+
+  <!-- Add / Edit Meal -->
+  <div class="section">
+    <h2>Add / Edit Dinner</h2>
+    <div class="row">
+      <div>
+        <label for="dateInput">Date</label>
+        <input type="date" id="dateInput" />
+      </div>
+      <div>
+        <label for="nameInput">Meal name</label>
+        <input type="text" id="nameInput" placeholder="e.g., Chicken stir-fry" />
+      </div>
+      <div>
+        <label for="typeInput">Meal type / category</label>
+        <input type="text" id="typeInput" placeholder="e.g., Chicken, Pasta, Vegetarian" />
+      </div>
+    </div>
+    <label for="notesInput">Notes (optional)</label>
+    <textarea id="notesInput" rows="2" placeholder="e.g., Kids loved it, took 30 minutes"></textarea>
+
+    <div style="margin-top:0.75rem;">
+      <button id="saveMealBtn">Save / Update</button>
+      <button id="clearFormBtn" class="secondary">Clear form</button>
+    </div>
+    <div id="formError" class="error"></div>
+  </div>
+
+  <!-- Meals List -->
+  <div class="section">
+    <div class="flex-between">
+      <h2>Meal history</h2>
+      <button id="clearAllBtn" class="danger">Clear all meals</button>
+    </div>
+    <p class="small">
+      Sorted by date. Click a row to load it into the form for editing.
+    </p>
+    <table id="mealsTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Meal</th>
+          <th>Type</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody id="mealsTbody">
+        <!-- rows injected here -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Suggestion -->
+  <div class="section">
+    <h2>Suggest next dinner</h2>
+    <p class="small">
+      Uses your history to avoid recent repeats and rotate meal types when possible.
+    </p>
+    <button id="suggestBtn">Suggest next meal</button>
+    <div id="suggestionBox" class="suggestion-box" style="display:none;"></div>
+  </div>
+
+  <!-- Save / Restore JSON -->
+  <div class="section">
+    <h2>Save / restore data</h2>
+    <p class="small">
+      Data is also kept in this browser via <span class="pill">localStorage</span>. Use JSON export/import as a backup or to move devices.
+    </p>
+    <div style="margin-top:0.5rem;">
+      <button id="downloadJsonBtn">Download JSON</button>
+      <input type="file" id="uploadJsonInput" class="file-input" accept="application/json" />
+    </div>
+    <div id="ioError" class="error"></div>
+  </div>
+</div>
+
+<script>
+  // --- Data model ---
+  // meals: array of { date: "YYYY-MM-DD", name: string, type: string, notes: string }
+  const STORAGE_KEY = "dinnerPlannerMeals_v1";
+
+  let meals = [];
+
+  // --- DOM elements ---
+  const dateInput = document.getElementById("dateInput");
+  const nameInput = document.getElementById("nameInput");
+  const typeInput = document.getElementById("typeInput");
+  const notesInput = document.getElementById("notesInput");
+  const formError = document.getElementById("formError");
+  const ioError = document.getElementById("ioError");
+
+  const mealsTbody = document.getElementById("mealsTbody");
+  const saveMealBtn = document.getElementById("saveMealBtn");
+  const clearFormBtn = document.getElementById("clearFormBtn");
+  const clearAllBtn = document.getElementById("clearAllBtn");
+  const suggestBtn = document.getElementById("suggestBtn");
+  const suggestionBox = document.getElementById("suggestionBox");
+  const downloadJsonBtn = document.getElementById("downloadJsonBtn");
+  const uploadJsonInput = document.getElementById("uploadJsonInput");
+
+  // --- Initialization ---
+  function loadFromLocalStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        meals = [];
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        meals = parsed;
+      } else {
+        meals = [];
+      }
+    } catch (e) {
+      console.error("Error loading from localStorage", e);
+      meals = [];
+    }
+  }
+
+  function saveToLocalStorage() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(meals));
+    } catch (e) {
+      console.error("Error saving to localStorage", e);
+    }
+  }
+
+  function sortMeals() {
+    meals.sort((a, b) => {
+      if (a.date < b.date) return -1;
+      if (a.date > b.date) return 1;
+      return 0;
+    });
+  }
+
+  function renderMealsTable() {
+    sortMeals();
+    mealsTbody.innerHTML = "";
+    if (meals.length === 0) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 4;
+      td.textContent = "No meals recorded yet.";
+      td.style.textAlign = "center";
+      td.style.color = "#777";
+      tr.appendChild(td);
+      mealsTbody.appendChild(tr);
+      return;
+    }
+
+    meals.forEach((meal, index) => {
+      const tr = document.createElement("tr");
+      tr.dataset.index = index;
+
+      const tdDate = document.createElement("td");
+      tdDate.textContent = meal.date;
+
+      const tdName = document.createElement("td");
+      tdName.textContent = meal.name;
+
+      const tdType = document.createElement("td");
+      tdType.textContent = meal.type || "";
+
+      const tdNotes = document.createElement("td");
+      tdNotes.textContent = meal.notes || "";
+
+      tr.appendChild(tdDate);
+      tr.appendChild(tdName);
+      tr.appendChild(tdType);
+      tr.appendChild(tdNotes);
+
+      tr.addEventListener("click", () => {
+        loadMealIntoForm(index);
+      });
+
+      mealsTbody.appendChild(tr);
+    });
+  }
+
+  function loadMealIntoForm(index) {
+    const meal = meals[index];
+    if (!meal) return;
+    dateInput.value = meal.date;
+    nameInput.value = meal.name;
+    typeInput.value = meal.type || "";
+    notesInput.value = meal.notes || "";
+    formError.textContent = "";
+  }
+
+  // --- Form handling ---
+  function validateForm() {
+    const date = dateInput.value.trim();
+    const name = nameInput.value.trim();
+    if (!date || !name) {
+      formError.textContent = "Date and meal name are required.";
+      return null;
+    }
+    formError.textContent = "";
+    return {
+      date,
+      name,
+      type: typeInput.value.trim(),
+      notes: notesInput.value.trim()
+    };
+  }
+
+  function upsertMeal(meal) {
+    const existingIndex = meals.findIndex(m => m.date === meal.date);
+    if (existingIndex >= 0) {
+      meals[existingIndex] = meal;
+    } else {
+      meals.push(meal);
+    }
+  }
+
+  function clearForm() {
+    dateInput.value = "";
+    nameInput.value = "";
+    typeInput.value = "";
+    notesInput.value = "";
+    formError.textContent = "";
+  }
+
+  saveMealBtn.addEventListener("click", () => {
+    const meal = validateForm();
+    if (!meal) return;
+    upsertMeal(meal);
+    saveToLocalStorage();
+    renderMealsTable();
+  });
+
+  clearFormBtn.addEventListener("click", () => {
+    clearForm();
+  });
+
+  clearAllBtn.addEventListener("click", () => {
+    if (!confirm("Clear all meals? This cannot be undone.")) return;
+    meals = [];
+    saveToLocalStorage();
+    renderMealsTable();
+    suggestionBox.style.display = "none";
+  });
+
+  // --- Suggestion logic ---
+  function suggestNextMeal() {
+    if (meals.length === 0) {
+      return {
+        message: "No meals recorded yet. Start by adding a few dinners.",
+        details: null
+      };
+    }
+
+    sortMeals();
+
+    // Build frequency maps
+    const nameCounts = {};
+    const typeCounts = {};
+    meals.forEach(m => {
+      const n = m.name.trim();
+      const t = (m.type || "").trim();
+      if (n) {
+        nameCounts[n] = (nameCounts[n] || 0) + 1;
+      }
+      if (t) {
+        typeCounts[t] = (typeCounts[t] || 0) + 1;
+      }
+    });
+
+    // Recent window: last N meals to avoid repeating
+    const RECENT_WINDOW = Math.min(5, meals.length);
+    const recentMeals = meals.slice(-RECENT_WINDOW);
+    const recentNames = new Set(recentMeals.map(m => m.name.trim()).filter(Boolean));
+    const recentTypes = new Set(recentMeals.map(m => (m.type || "").trim()).filter(Boolean));
+
+    // Candidate types: those that exist but not used in recent window
+    const allTypes = Object.keys(typeCounts);
+    const candidateTypes = allTypes.filter(t => !recentTypes.has(t));
+
+    // Choose a type: least-used among candidateTypes; if none, least-used overall
+    function pickLeastUsedType(types) {
+      if (types.length === 0) return null;
+      let bestType = types[0];
+      let bestCount = typeCounts[bestType] || 0;
+      types.forEach(t => {
+        const c = typeCounts[t] || 0;
+        if (c < bestCount) {
+          bestType = t;
+          bestCount = c;
+        }
+      });
+      return bestType;
+    }
+
+    let chosenType = pickLeastUsedType(candidateTypes);
+    if (!chosenType) {
+      chosenType = pickLeastUsedType(allTypes);
+    }
+
+    // Suggestion strategy:
+    // 1. If we have a chosenType, suggest "Some <type> meal" and show examples.
+    // 2. If no types, suggest a meal name that is not in recentNames, least-used.
+    let suggestion = "";
+    let rationale = [];
+
+    if (chosenType) {
+      suggestion = `Plan a "${chosenType}" style meal next.`;
+      rationale.push("This type has been used less often recently.");
+      if (recentTypes.size > 0) {
+        rationale.push(
+          `Recently used types: ${Array.from(recentTypes).join(", ")}.`
+        );
+      }
+      const examples = meals
+        .filter(m => (m.type || "").trim() === chosenType)
+        .map(m => m.name.trim())
+        .filter(Boolean);
+      if (examples.length > 0) {
+        const uniqueExamples = Array.from(new Set(examples));
+        rationale.push(
+          `Examples you've had before in this type: ${uniqueExamples.join(", ")}.`
+        );
+      }
+    } else {
+      // No type info at all; fall back to names
+      const allNames = Object.keys(nameCounts);
+      const candidateNames = allNames.filter(n => !recentNames.has(n));
+      function pickLeastUsedName(names) {
+        if (names.length === 0) return null;
+        let bestName = names[0];
+        let bestCount = nameCounts[bestName] || 0;
+        names.forEach(n => {
+          const c = nameCounts[n] || 0;
+          if (c < bestCount) {
+            bestName = n;
+            bestCount = c;
+          }
+        });
+        return bestName;
+      }
+      let chosenName = pickLeastUsedName(candidateNames);
+      if (!chosenName) {
+        chosenName = pickLeastUsedName(allNames);
+      }
+      suggestion = `Consider repeating "${chosenName}" next.`;
+      rationale.push("This meal has been used less often and avoids very recent repeats when possible.");
+    }
+
+    return {
+      message: suggestion,
+      details: {
+        recentMeals,
+        recentNames: Array.from(recentNames),
+        recentTypes: Array.from(recentTypes),
+        typeCounts,
+        nameCounts,
+        rationale
+      }
+    };
+  }
+
+  suggestBtn.addEventListener("click", () => {
+    const result = suggestNextMeal();
+    if (!result) return;
+    suggestionBox.style.display = "block";
+    suggestionBox.innerHTML = "";
+
+    const pMain = document.createElement("p");
+    pMain.textContent = result.message;
+    suggestionBox.appendChild(pMain);
+
+    if (result.details && result.details.rationale.length > 0) {
+      const ul = document.createElement("ul");
+      result.details.rationale.forEach(r => {
+        const li = document.createElement("li");
+        li.textContent = r;
+        ul.appendChild(li);
+      });
+      suggestionBox.appendChild(ul);
+    }
+
+    if (meals.length > 0) {
+      const last = meals[meals.length - 1];
+      const pLast = document.createElement("p");
+      pLast.className = "small";
+      pLast.textContent = `Most recent dinner: ${last.date} — ${last.name}${last.type ? " (" + last.type + ")" : ""}`;
+      suggestionBox.appendChild(pLast);
+    }
+  });
+
+  // --- JSON export/import ---
+  downloadJsonBtn.addEventListener("click", () => {
+    ioError.textContent = "";
+    try {
+      const blob = new Blob([JSON.stringify(meals, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "dinner-planner-data.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Download error", e);
+      ioError.textContent = "Error creating JSON download.";
+    }
+  });
+
+  uploadJsonInput.addEventListener("change", (event) => {
+    ioError.textContent = "";
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result;
+        const parsed = JSON.parse(text);
+        if (!Array.isArray(parsed)) {
+          throw new Error("JSON must be an array of meals.");
+        }
+        // Basic shape check
+        parsed.forEach(m => {
+          if (typeof m.date !== "string" || typeof m.name !== "string") {
+            throw new Error("Each meal must have 'date' and 'name' strings.");
+          }
+        });
+        meals = parsed;
+        saveToLocalStorage();
+        renderMealsTable();
+        suggestionBox.style.display = "none";
+      } catch (err) {
+        console.error("Upload parse error", err);
+        ioError.textContent = "Invalid JSON file format.";
+      } finally {
+        uploadJsonInput.value = "";
+      }
+    };
+    reader.onerror = () => {
+      ioError.textContent = "Error reading file.";
+      uploadJsonInput.value = "";
+    };
+    reader.readAsText(file);
+  });
+
+  // --- Boot ---
+  loadFromLocalStorage();
+  renderMealsTable();
+</script>
+</body>
+</html>
